@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:video_player/video_player.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 
 class VideoRecordingScreen extends StatefulWidget {
@@ -13,7 +12,7 @@ class VideoRecordingScreen extends StatefulWidget {
 }
 
 class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
-  late CameraController _cameraController;
+  CameraController? _cameraController;
   late List<CameraDescription> _cameras;
   bool _isRecording = false;
   XFile? _recordedVideo;
@@ -26,18 +25,27 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
 
   Future<void> _initializeCamera() async {
     _cameras = await availableCameras();
-    _cameraController = CameraController(
-      _cameras[0],
-      ResolutionPreset.high,
-    );
-    await _cameraController.initialize();
-    setState(() {});
+    if (_cameras.isNotEmpty) {
+      _cameraController = CameraController(
+        _cameras[0],
+        ResolutionPreset.high,
+      );
+      try {
+        await _cameraController!.initialize();
+        setState(() {});
+      } catch (e) {
+        print("Error initializing camera: $e");
+      }
+    } else {
+      print("No cameras available");
+    }
   }
 
   Future<void> _startRecording() async {
-    if (!_cameraController.value.isRecordingVideo) {
+    if (_cameraController != null &&
+        !_cameraController!.value.isRecordingVideo) {
       try {
-        await _cameraController.startVideoRecording();
+        await _cameraController!.startVideoRecording();
         setState(() {
           _isRecording = true;
         });
@@ -48,9 +56,10 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
   }
 
   Future<void> _stopRecording() async {
-    if (_cameraController.value.isRecordingVideo) {
+    if (_cameraController != null &&
+        _cameraController!.value.isRecordingVideo) {
       try {
-        XFile video = await _cameraController.stopVideoRecording();
+        XFile video = await _cameraController!.stopVideoRecording();
         setState(() {
           _isRecording = false;
           _recordedVideo = video;
@@ -76,7 +85,7 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
 
   @override
   void dispose() {
-    _cameraController.dispose();
+    _cameraController?.dispose();
     super.dispose();
   }
 
@@ -84,12 +93,12 @@ class _VideoRecordingScreenState extends State<VideoRecordingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("Video Recording")),
-      body: _cameraController.value.isInitialized
+      body: _cameraController != null && _cameraController!.value.isInitialized
           ? Column(
               children: [
                 AspectRatio(
-                  aspectRatio: _cameraController.value.aspectRatio,
-                  child: CameraPreview(_cameraController),
+                  aspectRatio: _cameraController!.value.aspectRatio,
+                  child: CameraPreview(_cameraController!),
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -169,7 +178,8 @@ class _VideoOptionsScreenState extends State<VideoOptionsScreen> {
 
       final outputDir =
           Directory('/storage/emulated/0/Download'); // Save to Downloads folder
-      final outputFilePath = "${outputDir.path}/output_video.mp4";
+      final outputFilePath =
+          "${outputDir.path}/tushar_video_\${DateTime.now().millisecondsSinceEpoch}.mp4";
 
       // Updated FFmpeg command
       final command =
