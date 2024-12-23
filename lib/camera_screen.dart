@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -110,12 +108,11 @@ class _CameraScreenState extends State<CameraScreen> {
               children: [
                 // Full-screen Camera Preview
                 Positioned.fill(
-                  child: CameraPreview(_controller),
-                ),
-                if (selectedFilter != 'none')
-                  Positioned.fill(
-                    child: _buildFilterOverlay(selectedFilter),
+                  child: ColorFiltered(
+                    colorFilter: _getColorFilter(selectedFilter),
+                    child: CameraPreview(_controller),
                   ),
+                ),
                 // Top controls
                 Positioned(
                   top: 40,
@@ -138,9 +135,10 @@ class _CameraScreenState extends State<CameraScreen> {
                   left: 0,
                   right: 0,
                   child: Center(
-                    child: IconButton(
+                    child: ElevatedButton.icon(
                       onPressed: _takePhoto,
                       icon: Icon(Icons.camera),
+                      label: Text('Capture'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
                         shape: CircleBorder(),
@@ -159,44 +157,82 @@ class _CameraScreenState extends State<CameraScreen> {
     );
   }
 
-  Widget _buildFilterOverlay(String filter) {
+  ColorFilter _getColorFilter(String filter) {
     switch (filter) {
       case 'grayscale':
-        return Container(
-          color: Colors.grey.withOpacity(0.3),
-        );
+        return ColorFilter.matrix([
+          0.33,
+          0.33,
+          0.33,
+          0,
+          0,
+          0.33,
+          0.33,
+          0.33,
+          0,
+          0,
+          0.33,
+          0.33,
+          0.33,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+        ]);
       case 'sepia':
-        return Container(
-          color: Color(0xFFC2A87A).withOpacity(0.3), // Sepia tone overlay
-        );
+        return ColorFilter.matrix([
+          0.393,
+          0.769,
+          0.189,
+          0,
+          0,
+          0.349,
+          0.686,
+          0.168,
+          0,
+          0,
+          0.272,
+          0.534,
+          0.131,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+        ]);
       case 'invert':
-        return ColorFiltered(
-          colorFilter: ColorFilter.matrix([
-            -1,
-            0,
-            0,
-            0,
-            255,
-            0,
-            -1,
-            0,
-            0,
-            255,
-            0,
-            0,
-            -1,
-            0,
-            255,
-            0,
-            0,
-            0,
-            1,
-            0,
-          ]),
-          child: Container(color: Colors.transparent),
-        );
+        return ColorFilter.matrix([
+          -1,
+          0,
+          0,
+          0,
+          255,
+          0,
+          -1,
+          0,
+          0,
+          255,
+          0,
+          0,
+          -1,
+          0,
+          255,
+          0,
+          0,
+          0,
+          1,
+          0,
+        ]);
       default:
-        return SizedBox.shrink();
+        return ColorFilter.mode(
+          Colors.transparent,
+          BlendMode.multiply,
+        );
     }
   }
 
